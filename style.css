@@ -1,6 +1,61 @@
+:root {
+  --gray: #8b8b8b;
+
+  --bkg-light: #fff;
+  --text-light: #000;
+
+  --text-dark: #fff;
+  --bkg-dark: #000;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bkg: var(--bkg-dark);
+    --text: var(--text-dark);
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bkg: var(--bkg-light);
+    --text: var(--text-light);
+  }
+}
+
+[color-scheme="dark"] {
+  --bkg: var(--bkg-dark);
+  --text: var(--text-dark);
+}
+
+[color-scheme="light"] {
+  --bkg: var(--bkg-light);
+  --text: var(--text-light);
+}
+
+.bkg--stroke {
+  stroke: var(--bkg);
+}
+
+.theme {
+  position: fixed;
+  top: 5px;
+  right: 20px;
+  background-color: var(--text);
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 3px solid var(--bkg);
+}
+
+.theme:is(:hover, :focus){
+  opacity: .8;
+}
+
 body {
   margin: 0;
   font-family: "Roboto Mono", monospace;
+  background-color: var(--bkg);
+  color: var(--text);
 }
 
 header {
@@ -23,7 +78,7 @@ ul {
 
 a {
   padding: 5px;
-  color: #808080;
+  color: var(--gray);
 }
 
 #img-container img {
@@ -40,7 +95,7 @@ h1 {
 
 h2 {
   margin: 0;
-  color: grey;
+  color: var(--gray);
 }
 
 #bio {
@@ -48,6 +103,8 @@ h2 {
   width: 50%;
   line-height: 24px;
 }
+
+
 
 @media (max-width: 768px) {
   #flex-container {
