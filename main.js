@@ -1,9 +1,13 @@
 const themeBtn = document.querySelector('.theme');
-const portfolioImages = document.querySelectorAll('.portfolio-pin');
+const portfolioPins = document.querySelectorAll('.portfolio-pin');
 
 function getCurrentTheme() {
-  let theme = window.matchMedia('prefers-color-scheme: dark').matches ? 'dark' : 'light';
-  localStorage.getItem('portfolio.theme') ? (theme = localStorage.getItem('portfolio.theme')) : null;
+  let theme = window.matchMedia('prefers-color-scheme: dark').matches
+    ? 'dark'
+    : 'light';
+  localStorage.getItem('portfolio.theme')
+    ? (theme = localStorage.getItem('portfolio.theme'))
+    : null;
   //console.log(theme)
   return theme;
 }
@@ -17,30 +21,28 @@ function loadTheme(theme) {
     themeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20 " viewBox="0 0 24 24" fill="none" stroke="currentColor" class="bkg--stroke" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`;
   }
   root.setAttribute('color-scheme', `${theme}`);
+
+  if (theme === 'dark') {
+    for (var index = 0; index < portfolioPins.length; index++) {
+      portfolioPins[index].src += '&theme=github_dark_dimmed';
+    }
+  } else {
+    for (var index = 0; index < portfolioPins.length; index++) {
+      portfolioPins[index].src = portfolioPins[index].src.replace(
+        '&theme=github_dark_dimmed',
+        ''
+      );
+    }
+  }
 }
 
 themeBtn.addEventListener('click', () => {
   let theme = getCurrentTheme();
   let audio;
   if (theme === 'dark') {
-    portfolioImages.forEach((image) => {
-      let src = image.getAttribute('src');
-      src = src.replace('&theme=github_dark_dimmed', '');
-      image.setAttribute('src', src);
-    });
     audio = document.querySelector('.theme-audio--light-on');
     theme = 'light';
   } else {
-    portfolioImages.forEach((image) => {
-      // Get the current src attribute
-      let src = image.getAttribute('src');
-
-      // Add the query parameter to the src attribute
-      src += '&theme=github_dark_dimmed';
-
-      // Set the updated src attribute
-      image.setAttribute('src', src);
-    });
     audio = document.querySelector('.theme-audio--light-off');
     theme = 'dark';
   }
