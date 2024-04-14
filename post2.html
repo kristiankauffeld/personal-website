@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Turning Demucs into a Web-API</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <main>
+        <article>
+            <header>
+                <h1>Turning Demucs into a Web-API</h1>
+            </header>
+            <p>
+                This article will take you through my journey of creating a Web/HTTP API that makes a pre-trained machine learning model available to clients (like browsers or curl-equipped terminals) over the public internet. The machine learning model I will use is Demucs, a source separation model.
+            </p>
+            <h2>
+                REST vs. RPC: Uncovering the Blueprint of My API
+            </h2>
+            <p>
+                As I embarked on the development of my API, I was convinced that I was adhering to REST, arguably the most popular architectural style chosen by developers for building web APIs. However, a deeper dive into the nuances of various API architectures revealed that my implementation more closely resembled an RPC style. The clue that sparked this realization was my approach to naming API routes with verbs such as “/prepareUpload”, “/infer”, and “/pollJob”. This verb-centric naming convention highlighted a focus on actions and commands, characteristic of RPC.
+
+                In contrast, RESTful APIs typically feature URL paths that represent resources using nouns, such as “/uploads”, “/inferences”, and “/jobs/{jobId}”, reflecting a resource-oriented approach. This fundamental difference in route naming underscored the deviation from REST principles towards an RPC-oriented design in my API.
+
+                Furthermore, my API can be more precisely classified as a JSON-RPC type, given its reliance on JSON as the data serialization format for client-server exchanges.
+            </p>
+            <h2>Deployment Strategy</h2>
+            <p>
+                I like to deploy my applications early in the development phase. Currently the infrastructure/hosting option I prefer using are Platform as a Service (PaaS) frameworks, specfically I enjoy using Railway as my infrastructure/hosting provider. I also think PaaS is a good choice for this project because it provides enough abstraction so that we don’t have to worry about the underlying runtime, but we still have the control to configure system libraries for our application like for example FFMPEG which we need in order for Demucs to work. 
+                PaaS providers like Railway also makes the deployment of your app very easy by allowing you to deploy it via a Github repository, and when you update the main branch, the hosting provider automatically deploys it. 
+            </p>
+
+            <h2>The Initial File Upload Implementation</h2>
+            <p>
+                I began the development of my API with a straightforward objective: to enable file uploads through a single POST endpoint named “/uploadfile”. This endpoint was designed to accept binary data directly using multipart/form-data and required a single query parameter, ?separation_type, to define the desired stem type. Clients would interact with the API via a URL structured as follows:
+            </p>
+            <span>https://banana.com/uploadfile?separation_type=vocals</span>
+            <p>
+                Upon receiving the client's request, the server would parse the submitted form data, followed by the invocation of the infer() function to start processing the uploaded file for audio separation. Once the inference process finished, it would result in the generation of a new audio file corresponding to the requested stem type (be it vocals, drums, bass, or others), which is subsequently stored on the server. Finally, the “/uploadfile” endpoint streams this processed file back to the client as the response.
+            </p>
+            <p>This solution, while simple and initially meeting the functional requirements, quickly revealed its limitations under scrutiny. Consider the following critical questions:</p>
+            <ul>
+                <li>“How easy would it be to deploy this API to another server?”</li>
+                <li>“If the server crashes, how do you ensure the files are persisted?”</li>
+                <li>“What do you do when your server runs out of disk space?”</li>
+                <li>“How do you plan to back up the files?”</li>
+            </ul>
+            <p>
+                Each question underscores a fundamental challenge inherent in directly managing file storage on the same server as the API. The complexities of ensuring data persistence, scalability, and backup without a dedicated system become apparent. These challenges, if not addressed, can severely impact the reliability and efficiency of the service. Let’s see how we can use a managed serverless file storage service as a more resilient file handling strategy.
+            </p>
+            <h2>Integrating File Cloud Storage with R2</h2>
+            <p>
+                Instead of uploading files to the server, and then further upload it to a serverless file storage service, we will upload files directly from the browser to an R2 bucket using signed URLs generated by our  server. 
+            </p>
+
+            <h2>Handling Long-running Operations</h2>
+            <p>
+                Most API requests are usually immediate and synchronous and only takes milliseconds or a few seconds to respond. For example, retrieving user information from a social media API, querying current stock prices from a financial data API, fetching weather data for a specific location, or performing a search query on a search engine's API typically completes within this short time frame. These requests often involve retrieving real-time or near real-time data. Whether it's current weather conditions, the latest stock prices, or recent social media posts, the information is expected to be up-to-date, reflecting the most current state of affairs. The underlying assumption for these types of requests is that the response will be quick enough not to disrupt the flow of interaction.
+            </p>
+            <p>
+                However, when it comes to long-running operations (LROs), such as video encoding, large-scale data analysis, or in our specific area of interest, machine learning model inferences like audio processing or image recognition, the immediate and synchronous response expectation changes. These are not typical millisecond-response operations; they are more resource-intensive and require a thoughtful approach to how we make these results available.
+            </p>
+            <p>
+                LROs necessitate a shift from the synchronous to the asynchronous communication paradigm. Here, rather than waiting for the operation to complete, the client is initially provided with an acknowledgment that the request has been received and is being processed. This is commonly accompanied by a unique identifier for the LRO, which the client can use to poll for status updates or receive a callback upon completion if webhooks are implemented.
+            </p>
+
+        </article>
+    </main>
+    
+</body>
+</html>

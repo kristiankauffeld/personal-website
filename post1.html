@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deployment Architecture Evolution</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <main style="margin-left: auto; margin-right: auto;">
+        <article style="max-width: 42rem">
+            <header>
+                <h1>Deployment Architecture Evolution</h1>
+            </header>
+            <h2>Deploying Natively</h2>
+            <p>
+                Before the widespread adoption of cloud computing services and open-source solutions, it was common for companies to both purchase their own hardware and buy commercial, proprietary software (like Oracle WebLogic or IBM WebSphere), and then deploy their product natively.
+
+                Regarding the hardware, companies had to acquire and maintain their own servers and networking equipment. This required significant capital investment in hardware, as well as the space to house these servers, often leading to the operation of dedicated data centers.
+                
+                As a result companies sought to maximize the use of their hardware by hosting multiple applications on the same physical server. This server utilization need meant that deployment had to be carefully planned to ensure that the various applications did not interfere with each other’s operations. Some of the challenges that comes with hosting multiple applications on a single machine are:
+            </p>
+            <ul>
+                <li>
+                    Resource Contention: Applications may compete for limited CPU, memory, and I/O bandwidth, leading to potential performance degradation.
+                </li>
+                <li>
+                    Security Risks: With multiple applications on the same server, a security breach in one application could potentially compromise others.
+                </li>
+                <li>
+                    Maintenance Complexity: Patching and updating the operating system or shared components must be done carefully to avoid breaking any applications.
+                </li>
+            </ul>
+            <p>
+                In order to avoid these challenges, various strategies for isolation and resource management were employed. These included:
+            </p>
+            <ul>
+                <li>
+                    Runtime enviroment: For interpreted or bytecode-compiled languages, separate instances of the interpreter or virtual machine (like the JVM for Java applications) were run to provide additional runtime isolation.
+                </li>
+                <li>
+                    Process-Level Separation: Each JVM runs as a separate process on the operating system, providing a clear boundary between applications. This allows for finer-grained control over resource allocation and application management.
+                </li>
+                <li>
+                    File System Isolation: Applications were often separated into different directories, with permissions set to restrict access to those directories, providing a basic level of security and namespace isolation.
+                </li>
+            </ul>
+            <p>
+                All these strategies were necessary to ensure that applications could coexist on the same hardware without impacting one another's performance or stability significantly. However, despite best efforts, natively deployed applications running on shared hardware still had drawbacks like:
+            </p>
+            <ul>
+                <li>
+                    Limited Scalability: Physical servers have finite resources, making it difficult to scale applications independently or on-demand.
+                </li>
+                <li>
+                    Dependency hell: Managing dependencies for multiple applications on the same server could become complex, especially if different applications required different versions of the same library. This scenario, often referred to as "dependency hell," made updates and maintenance challenging.
+                </li>
+                <li>
+                    Downtime During Updates: Updating one application might require rebooting the server, causing downtime for all other applications hosted on the same machine.
+                </li>
+            </ul>
+            <p>
+                So the deployment still required engineers to do a lot of manual configuration of infrastructure, and these manual changes slow the overall process, making it difficult to quickly respond to the changing needs of the business or to deploy new features and updates with the agility that modern businesses require.
+            </p>
+        </article>
+    </main>
+</body>
+</html>
