@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Turning Demucs into a Web-API</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <main>
+        <article>
+            <header>
+                <h1>Setting Up a Python Project: Local vs. Containerized Development</h1>
+            </header>
+            <p>
+                When starting a new Python project, one of the first decisions you'll face is how to set up your development environment. 
+                Should you go with a traditional local setup using virtual environments, or should you containerize your development with Docker? 
+                Let's explore both approaches through a practical example.
+            </p>
+
+            <h2>The Project Setup</h2>
+            <p>We'll use a simple FastAPI project as our example. Here's what we need to get started:</p>
+            <pre>
+                <code>
+                    mkdir hello-world
+                    pyenv local 3.9.18 
+                    python -m venv .venv
+                    source ./.venv/bin/activate
+                    python -m pip install --upgrade pip
+                    pip install "fastapi[standard]"
+                    pip freeze > requirements.txt
+                </code>
+            </pre>
+            <p>This gives us a basic Python project with FastAPI installed. But how should other developers run this project? Let's look at two approaches.</p>
+            <h2>The Traditional Way: Local Development</h2>
+            <p>The traditional approach involves each developer setting up Python and managing dependencies on their local machine. 
+                This is what most Python developers start with, and it looks familiar:
+            </p>
+            <ol>
+                <li>Install the correct Python version</li>
+                <li>Create a virtual environment</li>
+                <li>Install dependencies</li>
+            </ol>
+            <p>Simple, right? Well, not always. Consider these scenarios:</p>
+            <ul>
+                <li>A new team member can't get the exact Python version working on their machine</li>
+                <li>Someone forgets to activate their virtual environment and installs packages globally</li>
+                <li>The project needs system-level dependencies that aren't documented</li>
+                <li>Different operating systems cause subtle compatibility issues</li>
+            </ul>
+
+            <h2>Enter Containerized Development</h2>
+            <p>Here's where Docker comes in. Instead of managing the environment locally, we can define it in code:</p>
+            <pre>
+                <code>
+                ARG PYTHON_VERSION=3.9.18
+                FROM python:${PYTHON_VERSION} as base
+                WORKDIR /usr/src/app
+                RUN --mount=type=cache,target=/root/.cache/pip \
+                --mount=type=bind,source=requirements.txt,target=requirements.txt \
+                python -m pip install -r requirements.txt
+                CMD uvicorn src.main:app --reload --port 8000 --host 0.0.0.0
+                </code>
+            </pre>
+            <p>And orchestrate it with Docker Compose:</p>
+            <pre>
+                <code>
+                    services:
+                        fastapi:
+                            image: fastapi
+                            build:
+                                context: .
+                                dockerfile: Dockerfile.dev
+                            ports:
+                                - 8000:8000
+                            volumes:
+                                - ./src:/usr/src/app/src:z
+                            restart: 'no'
+                </code>
+            </pre>
+            <p>Now, any developer can start the project with just:</p>
+            <code>docker compose up --build</code>
+
+            <h2>Why Choose Containerization?</h2>
+            <p>After setting up both approaches, I recommend containerized development for most team projects. Here's why:</p>
+            <ol>
+                <li>Environment Consistency: The Docker configuration ensures everyone runs the exact same environment. No more "works on my machine" problems.</li>
+                <li>Simple Onboarding: New team members don't need to worry about Python versions or virtual environments. They just need Docker installed.</li>
+                <li>Version Control: The development environment itself becomes code that can be version controlled. Changes to the environment are explicit and tracked.</li>
+                <li>Production Similarity: Docker-based development environments are closer to how the application will run in production, catching environment-related issues earlier.</li>
+            </ol>
+
+            <h2>Conclusion</h2>
+            <p>The choice between local and containerized development isn't just about technical preferences—it's about team workflow and project needs. While containerization adds a layer of abstraction, the benefits of consistency and reproducibility make it worth considering for team projects.
+
+                Whether you choose local or containerized development, the key is to document your choice and its rationale clearly. This helps team members understand not just how to run the project, but why it's set up that way.
+                
+                Remember: the goal is to spend less time fighting with environment issues and more time writing code. Choose the approach that best helps your team achieve that goal.
+            </p>
+        </article>
+
+    </main>
+
+</body>
