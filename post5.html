@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Turning Demucs into a Web-API</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="style.css" />
+        <title>Web Application Performance: Server-Side and Client-Side Optimization</title>
+    </head>
+<body>
+    <header>
+        <h1>Authentication in Modern Web Applications: Notes on Implementation</h1>
+    </header>
+    
+    <article>
+        <section>
+            <p>I've compiled these notes on <strong>authentication implementation</strong> based on my experiences working with various systems and architectures. These observations cover the key aspects I've found important when implementing authentication in web applications, from <strong>request routing strategies</strong> to the evolution of protocols like <strong>OAuth</strong> and <strong>OpenID Connect</strong>, to practical implementation options. While not exhaustive, these notes reflect approaches and patterns I've found valuable in real-world scenarios. I hope these implementation insights prove useful whether you're designing a new system or evaluating options for an existing one.</p>
+        </section>
+
+        <section>
+            <h2>Request Routing Strategy and Cross-Cutting Concerns</h2>
+            <p><strong>Request routing</strong> is the strategy of how to forward requests arriving in your system to the appropriate backend microservice or endpoint that processes the requests. These are the three fundamental request routing patterns:</p>
+            <ul>
+                <li><strong>Direct Routing</strong></li>
+                <li><strong>Proxy Routing</strong> (Reverse Proxy)</li>
+                <li><strong>Forward Routing</strong></li>
+            </ul>
+            <p>I think the proxy routing strategy is the most interesting. A proxy is a network layer that sits in front of our APIs and it's main role is to intercept and forward incoming requests to the appropriate server based on request URL, which is also called "service discovery".</p>
+            <p>When it comes to adding authorization to APIs there're two major strategies: handling validation in a proxy, or handling validation in each service. In both cases, middleware - a layer of code that provides common functionality to process all incoming requests - is typically used to implement the validation logic. Most web servers have a concept of middleware or request preprocessors. Middleware components are usually executed in order, and typically we can choose the order in which they're executed.</p>
+            <p>If validation is handled within each individual service, the service's middleware chain handles the validation. Since authorization controls access to our server, the authorization middleware must be executed early in the chain.</p>
+            <p>The other approach is to centralize validation in our proxy, where the middleware processes and validates requests before forwarding them. The backend services behind the proxy then receive pre-authenticated requests. While the backend services could validate the token again, they typically don't need to since they trust the proxy.</p>
+        </section>
+
+        <section>
+            <h2>OAuth and OpenId Connect (OIDC)</h2>
+            <p>When implementing these validation strategies, the two most important protocols you need to know are <strong>OAuth</strong> (Open Authorization) and <strong>OpenID Connect</strong> (OIDC). In order to understand these two protocols, we have to understand the historical context and problems that OAuth was created to solve.</p>
+            
+            <p>Before OAuth, a common but problematic pattern was that third-party applications would ask users to share their username and password to perform tasks on their behalf. A classic example that led to OAuth's creation was Yelp's integration with popular email providers back in the the 2000's. As a way of improving the user experience, Yelp had this feature where the users would be able to connect with their email contacts on Yelp, but the user was requested to share their email address and password, granting Yelp full permissions to their email account.</p>
+            <div class="image-container">
+                <img src="assets/yelp.png" alt="traditional server-side design">
+            </div>
+            
+            <p>The OAuth protocol was created to solve these problems by introducing a secure delegation protocol. Instead of sharing credentials, OAuth allowed users to grant specific permissions (scopes) to third-party applications in order to control what resources they could access.</p>
+
+            <p>Then in 2009 the "Login with Facebook" button was introduced followed by the Login with Google button and similar buttons by many other companies like Twitter, Microsoft, and LinkedIn. Companies started using OAuth for authentication even though OAuth 2.0 was not designed to be used for authentication. Essentially, OAuth 2.0 was being used beyond for its purpose of delegated authorization.</p>
+            
+            <p>However, using OAuth for authentication is bad practice because there is no way of getting user information in OAuth. If you log in to an app with OAuth 2.0, there is no way for that app to know who just logged in or other information like your email address and name. OAuth 2.0 is designed for permissions scopes. All it does is verify that your access token is scoped to a particular resource set. It doesn't verify who you are.</p>
+            
+            <p>When the various companies built their social login buttons, using OAuth under the hood, they all had to add custom hacks on top of OAuth to allow clients to get the user's information. If you read about these various implementations, keep in mind that they are different and not interoperable.</p>
+            
+            <p>To address this lack of standardization, OpenID Connect was created as a standard for adopting OAuth 2.0 for authentication. OpenID Connect is a thin layer on top of OAuth 2.0 that allows it to be used for authentication.</p>
+        </section>
+
+        <section>
+            <h2>Implementing Auth: Self-Built, Self-Hosted, and SaaS</h2>
+            <p>While <strong>OAuth 2.0</strong> and <strong>OpenID Connect</strong> provide the protocols for authentication and authorization, when it comes to implementing these protocols in your application, there are three main approaches to implementing authentication:</p>
+            
+            <ol>
+                <li>
+                    <h3><strong>Application-embedded Solutions</strong></h3>
+                    <ul>
+                        <li>Using authentication libraries within your application backend</li>
+                        <li>Examples: Passport.js, Spring Security, Django Authentication</li>
+                        <li>You manage everything: user data model, database, token issuance</li>
+                        <li>Suitable for single applications with simple auth needs</li>
+                        <li>This ties back to our earlier discussion of "handling validation in each service"</li>
+                    </ul>
+                </li>
+                
+                <li>
+                    <h3><strong>Self-hosted Auth Servers</strong></h3>
+                    <ul>
+                        <li>Standalone authentication servers you deploy and maintain</li>
+                        <li>Examples: Keycloak, OpenIAM</li>
+                        <li>Centralized auth for multiple applications</li>
+                        <li>You manage the server infrastructure but not the auth implementation</li>
+                        <li>Suitable when you need control over infrastructure or data locality</li>
+                    </ul>
+                </li>
+                
+                <li>
+                    <h3><strong>Identity-as-a-Service (IDaaS)</strong></h3>
+                    <ul>
+                        <li>Fully managed authentication services</li>
+                        <li>Examples: Auth0, Okta, Clerk</li>
+                        <li>No infrastructure management needed</li>
+                        <li>Provider handles everything: updates, scaling, security</li>
+                        <li>Suitable when you want minimum operational overhead</li>
+                    </ul>
+                </li>
+            </ol>
+        </section>
+
+        <section>
+            <h2>Authentication Flow Implementation</h2>
+            <p>Here is the <strong>authentication flow</strong> that we wanna implement for our application:</p>
+            <ol>
+                <li>User initiates login with social identify provider (i.e. Google) which is the only available type of authentication that our application allow. We only want to do authentication, and have no need for additional Google resource access.</li>
+                <li>Proxy/API Gateway forwards to our centralized identity and access management service (IAM service) that is either self-hosted (i.e. OpenAuth, Keycloack) or SaaS (Clerk, Auth0). The IAM service has been pre-configured with Google credentials.</li>
+                <li>The IAM service handles the OAuth/OIDC flow with Google. IAM acts as the "client" application in the OAuth flow. It is only interested in receiving the 'openid' scope from Google.</li>
+                <li>After successful authentication, user is redirected back to our app with a JWT token that is issued by our IAM service. This is a new token issued by our IAM, not Google's token, and it contains user information that is signed by our IAM.</li>
+                <li>User includes JWT in subsequent requests. Typically in Authorization header. Bearer token format.</li>
+                <li>Proxy/API gateway validates JWT using JWKS. Proxy fetches public keys from IAM's JWKS endpoint. Validates token signature. Checks token claims (expiration, issuer, etc.). If valid, forwards request to appropriate service.</li>
+            </ol>
+        </section>
+
+        <section>
+            <h2>Understanding OAuth Roles in the Flow</h2>
+            <p>Let's break down who/what are the <strong>authorization server</strong>, the <strong>resource server</strong>, and the <strong>client application</strong> in the described flow. There are actually two OAuth/OIDC flows happening:</p>
+            
+            <h3><strong>First Flow</strong> (Social Login with Google):</h3>
+            <ul>
+                <li>Authorization Server: Google</li>
+                <li>Client Application: Your service (Keycloak/Auth0)</li>
+                <li>Resource Server: Google (but we don't access resources since we only want authentication)</li>
+                <li>Resource Owner: The end user</li>
+            </ul>
+            
+            <h3><strong>Second Flow</strong> (Within Your System):</h3>
+            <ul>
+                <li>Authorization Server: Your IAM service (Keycloak/Auth0)</li>
+                <li>Client Application: Your frontend application</li>
+                <li>Resource Server: Your backend services (behind the API gateway)</li>
+                <li>Resource Owner: The end user</li>
+            </ul>
+            
+            <p>This is an important distinction because:</p>
+            <ul>
+                <li>Your <strong>IAM service</strong> acts as a <strong>client</strong> when talking to Google</li>
+                <li>But then acts as an <strong>authorization server</strong> when issuing tokens for your system</li>
+                <li>Your frontend application is the <strong>client</strong> that receives tokens from your IAM</li>
+                <li>Your <strong>API gateway</strong> validates tokens issued by your IAM service</li>
+                <li>Your backend services trust tokens validated by the API gateway</li>
+            </ul>
+
+            <p>In our architecture the IAM is primarily an Authorization Server - that's its main role in our architecture. The client role it plays with Google is just to facilitate social login, but its core responsibility is being an Authorization Server for our system. Think of it this way:</p>
+            <ol>
+                <li>The IAM acts as a client to Google briefly just to handle social login</li>
+                <li>But for all subsequent interactions in your system (which will be the majority):
+                    <ul>
+                        <li>It issues <strong>tokens</strong></li>
+                        <li>It validates <strong>tokens</strong></li>
+                        <li>It manages <strong>user sessions</strong></li>
+                        <li>It handles <strong>token refresh</strong></li>
+                        <li>It manages <strong>user information</strong></li>
+                        <li>It provides <strong>JWKS endpoints</strong></li>
+                        <li>It handles <strong>token revocation</strong></li>
+                    </ul>
+                </li>
+            </ol>
+            <p>These are all Authorization Server responsibilities. The client role with Google is just one small part of its functionality, necessary to support social login as an authentication option.</p>
+            <p>This is why solutions like Auth0, Okta, and Keycloak are called Identity and Access Management servers or Authorization Servers - because that's their primary purpose, even though they can also act as clients to other auth providers when needed for social login integration.</p>
+            <p>The client role is more like a feature they support rather than their core identity in the system.</p>
+        </section>
+
+        <section>
+            <h2>Conclusion</h2>
+            <p>The journey to implementing robust authentication in your applications requires understanding both the underlying protocols and architectural patterns. We've explored how request routing strategies like proxy routing can centralize authentication concerns, the evolution from OAuth to OpenID Connect for standardized authentication, and the spectrum of implementation options from application-embedded libraries to fully managed SaaS solutions.</p>
+            
+            <p>When selecting your authentication approach, consider your specific requirements around control, scalability, compliance, and development resources. For smaller projects or teams with limited resources, IDaaS solutions like Auth0 or Clerk offer the quickest path to robust authentication. For organizations with specific compliance needs or those requiring complete control over user data, self-hosted solutions like Keycloak may be more appropriate.</p>
+            
+            <p>Remember that authentication is not a "set and forget" component—it requires ongoing maintenance to address emerging security threats and evolving best practices. Whichever approach you choose, prioritize security fundamentals like proper token validation, secure storage, regular updates, and comprehensive testing.</p>
+            
+            <p>By thoughtfully implementing the patterns and protocols discussed in this post, you'll create a solid foundation for your application's security, allowing you to focus on building features that deliver value to your users while maintaining their trust in your system's ability to protect their information.</p>
+        </section>
+    </article>
+</body>
+</html>
