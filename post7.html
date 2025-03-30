@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Java Database Connectivity Stack</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #444;
+            margin-top: 25px;
+        }
+        code {
+            background-color: #f5f5f5;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-family: monospace;
+        }
+        strong {
+            font-weight: bold;
+        }
+        .container {
+            padding: 20px 0;
+        }
+        ul li {
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Java Database Connectivity Stack</h1>
+        
+        <h2>JDBC: The Foundation</h2>
+        <p>At the lowest level, we have JDBC (Java Database Connectivity) API which provides a standard API for connecting to databases. The JDBC API is comprised of two packages:</p>
+        
+        <ul>
+            <li>java.sql</li>
+            <li>javax.sql</li>
+        </ul>
+        
+        <p>To use the JDBC API with a particular database management system, you need a JDBC technology-based driver to mediate between JDBC technology and the database. Working directly with JDBC would look something like this:</p>
+        
+        <pre>// Establish connection
+Connection conn = DriverManager.getConnection(
+    "jdbc:sqlserver://localhost:1433;databaseName=MyAppDB", "user", "password");
+
+// Create a statement
+PreparedStatement stmt = conn.prepareStatement(
+    "SELECT Id, Name, Description, UnitPrice, IsFeatured FROM Products WHERE Id = ?");
+stmt.setString(1, productId.toString());
+
+// Execute query and process results
+ResultSet rs = stmt.executeQuery();
+Product product = null;
+if (rs.next()) {
+    product = new Product();
+    product.setId(UUID.fromString(rs.getString("Id")));
+    product.setName(rs.getString("Name"));
+    product.setDescription(rs.getString("Description"));
+    product.setUnitPrice(rs.getBigDecimal("UnitPrice"));
+    product.setIsFeatured(rs.getBoolean("IsFeatured"));
+}
+
+// Close resources
+rs.close();
+stmt.close();
+conn.close();</pre>
+        
+        <p>While using JDBC directly (as oppose to using it through a wrapper) is powerful and give us full control over database access, this approach is verbose, error-prone, and requires explicit resource management. We'd need to write similar boilerplate code for every database operation, which is clearly not sustainable for a large application.</p>
+        
+        <h2>JPA: Object-Relational Mapping (ORM)</h2>
+        <p>An ORM solution implies, in the Java world, the JPA specification and a JPA implementation —Hibernate being the most popular nowadays.</p>
+        <p>JPA (Jakarta Persistence API, formerly Java Persistence API) is a object-relational mapping (ORM) specification defining an API that manages the persistence of objects and object/relational mappings. It allows us to work with Java objects rather than SQL statements and result sets. The core of JPA revolves around the EntityManager, which manages the lifecycle of entities.</p>
+        
+        <pre>// Get an EntityManager from the EntityManagerFactory
+EntityManager em = entityManagerFactory.createEntityManager();
+
+// Begin transaction
+em.getTransaction().begin();
+
+// Simple CRUD operations
+// Create
+Product newProduct = new Product();
+newProduct.setId(UUID.randomUUID());
+newProduct.setName("New Widget");
+newProduct.setDescription("A fantastic new widget");
+newProduct.setUnitPrice(new BigDecimal("19.99"));
+newProduct.setIsFeatured(true);
+em.persist(newProduct);
+
+// Read
+Product foundProduct = em.find(Product.class, productId);
+
+// Update
+foundProduct.setPrice(new BigDecimal("24.99"));
+em.merge(foundProduct);
+
+// Delete
+em.remove(foundProduct);
+
+// Commit transaction
+em.getTransaction().commit();
+
+// Close EntityManager
+em.close();</pre>
+        
+        <p>JPA also provides JPQL (Java Persistence Query Language), a SQL-like language that operates on entities rather than tables:</p>
+        
+        <pre>// Create a query using JPQL
+TypedQuery<Product> query = em.createQuery(
+    "SELECT p FROM Product p WHERE p.unitPrice < :price", Product.class);
+query.setParameter("price", new BigDecimal("50.00"));
+List<Product> affordableProducts = query.getResultList();</pre>
+        
+        <h2>Hibernate: JPA Implementation</h2>
+        <p>Hibernate is the most popular implementation of this specification. So, JPA will specify what must be done to persist objects, while Hibernate will determine how to do it.</p>
+        
+        <p>It adds additional features and optimizations beyond what JPA requires. While we could use Hibernate's native API, it's generally recommended to program to the JPA interface for better portability.</p>
+        <p>Hibernate handles many complex scenarios efficiently, such as lazy loading of relationships, caching to improve performance, and sophisticated mapping strategies. It also provides a powerful criteria API for building type-safe queries:</p>
+        
+        <pre>// Using Hibernate Criteria API (via JPA)
+CriteriaBuilder cb = em.getCriteriaBuilder();
+CriteriaQuery<Product> cq = cb.createQuery(Product.class);
+Root<Product> product = cq.from(Product.class);
+cq.select(product)
+  .where(cb.like(product.get("name"), "%Widget%"));
+List<Product> widgets = em.createQuery(cq).getResultList();</pre>
+        
+        <h2>Spring Data JPA: Repositories Simplify Everything</h2>
+        <p>So JPA and Hibernate are great, but we still have to write a lot of repetitive code for common operations and things like pagination, auditing and other common features. This is where Spring Data JPA comes in.</p>
+        <p>Spring Data JPA significantly reduces code verbosity by eliminating several layers of boilerplate compared to using plain JPA or native Hibernate. When using just JPA/Hibernate, you would typically need:</p>
+        
+        <ul>
+            <li>Code to create and manage the EntityManagerFactory</li>
+            <li>Code to create and close EntityManager instances</li>
+            <li>Explicit transaction management (begin/commit/rollback)</li>
+            <li>Manual implementation of common data access methods</li>
+            <li>Error handling and resource cleanup</li>
+        </ul>
+        
+        <p>With Spring Data JPA, all of this is handled for you:</p>
+        
+        <ul>
+            <li>Spring Boot auto-configuration sets up the EntityManagerFactory</li>
+            <li>Spring manages EntityManager creation and cleanup</li>
+            <li>@Transactional annotations handle transaction boundaries declaratively</li>
+            <li>Common CRUD operations come pre-implemented</li>
+            <li>Finder methods are automatically implemented based on method names</li>
+        </ul>
+        
+        <p>When comparing these approaches, using plain JPA looks like this:</p>
+        
+        <pre>// Service layer
+public Product findProduct(UUID id) {
+    EntityManager em = entityManagerFactory.createEntityManager();
+    try {
+        em.getTransaction().begin();
+        Product product = em.find(Product.class, id);
+        em.getTransaction().commit();
+        return product;
+    } catch (Exception e) {
+        if (em.getTransaction().isActive()) {
+            em.getTransaction().rollback();
+        }
+        throw e;
+    } finally {
+        em.close();
+    }
+}</pre>
+    </div>
+</body>
+</html>
